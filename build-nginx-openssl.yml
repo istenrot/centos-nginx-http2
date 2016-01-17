@@ -67,7 +67,7 @@
     shell: "sed -i '/--with-pcre/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre-jit \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with static OpenSSL library'
     shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl=/home/vagrant/openssl \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without Kerberos support'
+  - name: 'Modify RPM spec: build OpenSSL without insecure crypto'
     shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=\"no-krb5 no-ssl2 no-ssl3 no-comp no-dtls no-rc4\" \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with dynamic libatomic_ops'
     shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-libatomic \\\\ ' rpmbuild/SPECS/nginx.spec"
