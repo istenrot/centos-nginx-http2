@@ -6,7 +6,11 @@
     openssl_src: openssl-1.0.2e
     pkg_release: 3.el7.sse2
   tasks:
-  - name: Install build tools
+  - name: Install EPEL Yum repo
+    yum: name=epel-release state=present
+    become: yes
+    become_user: root
+  - name: Install build tools from CentOS repos
     yum: name={{ item }} state=latest
     become: yes
     become_user: root
@@ -17,9 +21,6 @@
     - git
     - glib2
     - rsync
-    - gcc
-    - gcc-c++
-    - binutils
     - make
     - patch
     - bzip2
@@ -41,6 +42,16 @@
     - rpm-build
     - redhat-rpm-config
     - mock
+    - scl-utils
+    - centos-release-scl-rh
+  - name: Install build tools from Devtoolset-3 repo
+    yum: name={{ item }} state=latest
+    become: yes
+    become_user: root
+    with_items:
+    - devtoolset-3-binutils
+    - devtoolset-3-gcc
+    - devtoolset-3-gcc-c++
   - name: Download Nginx RPM source package
     get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/nginx-src.rpm
   - name: Extract Nginx RPM source package
@@ -56,7 +67,7 @@
     args:
       chdir: ~/openssl
   - name: Run OpenSSL configure script to apply CHACHA20-POLY1305
-    shell: ./config
+    shell: source /opt/rh/devtoolset-3/enable && ./config
     args:
       chdir: ~/openssl
   - name: 'Modify RPM spec: remove openssl package dependencies'
@@ -80,5 +91,5 @@
   - name: 'Modify RPM spec: update release'
     shell: 'sed -i "s/Release: .*\.ngx/Release: {{ pkg_release }}/" rpmbuild/SPECS/nginx.spec'
   - name: Build RPM packages
-    shell: rpmbuild -ba rpmbuild/SPECS/nginx.spec
+    shell: source /opt/rh/devtoolset-3/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
 
