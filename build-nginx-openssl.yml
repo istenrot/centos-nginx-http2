@@ -1,0 +1,88 @@
+---
+- hosts: all
+  remote_user: vagrant
+  vars:
+    nginx_src_rpm: nginx-1.9.9-1.el7.ngx.src.rpm
+    openssl_src: openssl-1.0.2e
+  tasks:
+  - name: Install build tools
+    yum: name={{ item }} state=latest
+    become: yes
+    become_user: root
+    with_items:
+    - ca-certificates
+    - curl
+    - libcurl
+    - glib2
+    - rsync
+    - gcc
+    - gcc-c++
+    - binutils
+    - make
+    - patch
+    - bzip2
+    - xz
+    - tar
+    - autoconf
+    - automake
+    - zlib-devel
+    - glibc-devel
+    - libaio-devel
+    - pcre-devel
+    - nss-devel
+    - nss-softokn-devel
+    - nss-softokn-freebl-devel
+    - nspr-devel
+    - libgcrypt-devel
+    - libgpg-error-devel
+    - libatomic_ops-devel
+    - rpm-build
+    - redhat-rpm-config
+    - mock
+  - name: Download Nginx RPM source package
+    get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/nginx-src.rpm
+  - name: Extract Nginx RPM source package
+    shell: rpm -i ~/nginx-src.rpm
+#  - name: Make pcre directory
+#    file: dest=pcre state=directory
+#  - name: Download latest PCRE
+#    shell: curl -s -S -L 'http://sourceforge.net/projects/pcre/files/latest/download?source=navbar' | tar -C pcre --strip-components=1 -xj
+  - name: Make openssl directory
+    file: dest=openssl state=directory
+  - name: Download OpenSSL
+    shell: curl -s -S -L https://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
+  - name: 'Modify RPM spec: remove openssl package dependencies'
+    shell: "sed -i '/Requires: \\(lib\\)\\?openssl/d' rpmbuild/SPECS/nginx.spec"
+#  - name: 'Modify RPM spec: remove pcre package dependencies'
+#    shell: "sed -i '/Requires: pcre/d' rpmbuild/SPECS/nginx.spec"
+#  - name: 'Modify RPM spec: build with static PCRE library'
+#    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre=../pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build with dynamic PCRE library'
+    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: enable PCRE JIT'
+    shell: "sed -i '/--with-pcre/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre-jit \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build with static OpenSSL library'
+    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl=/home/vagrant/openssl \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build OpenSSL without Kerberos support'
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-krb5 \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build OpenSSL without SSLv2'
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-ssl2 \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build OpenSSL without SSLv3'
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-ssl3 \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build OpenSSL without SSL compression'
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-comp \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build OpenSSL without DTLS'
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-dtls \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build with dynamic libatomic_ops'
+    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-libatomic \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: add build identifier'
+    shell: sed -i "/--group=/a \ \ \ \ \ \ \ \ --build='SSE2, {{ openssl_src }}, PCRE JIT, libatomic_ops, TCP Fast Open' \\\ " rpmbuild/SPECS/nginx.spec
+  - name: 'Modify RPM spec: CC options'
+    shell: "sed -i 's/pcre-config --cflags./\\0 -mmmx -msse -msse2 -DTCP_FASTOPEN=23/' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: remove trailing whitespace from configure lines'
+    shell: sed -i "s/ $//" rpmbuild/SPECS/nginx.spec
+  - name: 'Modify RPM spec: update release'
+    shell: 'sed -i "s/Release: .*\.ngx/Release: 2%{?dist}.sse2/" rpmbuild/SPECS/nginx.spec'
+  - name: Build RPM packages
+    shell: rpmbuild -ba rpmbuild/SPECS/nginx.spec
+
