@@ -56,10 +56,14 @@
     get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/nginx-src.rpm
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/nginx-src.rpm
+  - name: Make pcre directory
+    file: dest=pcre state=directory
+  - name: Download latest PCRE
+    shell: curl -s -S -L 'http://sourceforge.net/projects/pcre/files/latest/download?source=navbar' | tar -C pcre --strip-components=1 -xj
   - name: Make openssl directory
     file: dest=openssl state=directory
   - name: Download OpenSSL
-    shell: curl -s -S -L https://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
+    shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
   - name: Download CloudFlare CHACHA20-POLY1305 patch
     get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/openssl__chacha20_poly1305_cf.patch
   - name: Apply CHACHA20-POLY1305 patch to OpenSSL
@@ -72,8 +76,10 @@
       chdir: ~/openssl
   - name: 'Modify RPM spec: remove openssl package dependencies'
     shell: "sed -i '/Requires: \\(lib\\)\\?openssl/d' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build with dynamic PCRE library'
-    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: remove pcre package dependencies'
+    shell: "sed -i '/Requires: pcre/d' rpmbuild/SPECS/nginx.spec"
+  - name: 'Modify RPM spec: build with static PCRE library'
+    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre=/home/vagrant/pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: enable PCRE JIT'
     shell: "sed -i '/--with-pcre/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre-jit \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with static OpenSSL library'
