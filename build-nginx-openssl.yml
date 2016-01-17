@@ -5,6 +5,10 @@
     nginx_src_rpm: nginx-1.9.9-1.el7.ngx.src.rpm
     openssl_src: openssl-1.0.2e
   tasks:
+  - name: Install EPEL Yum repo
+    yum: name=epel-release state=present
+    become: yes
+    become_user: root
   - name: Install build tools
     yum: name={{ item }} state=latest
     become: yes
@@ -50,13 +54,13 @@
   - name: Make openssl directory
     file: dest=openssl state=directory
   - name: Download OpenSSL
-    shell: curl -s -S -L https://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
+    shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
   - name: 'Modify RPM spec: remove openssl package dependencies'
     shell: "sed -i '/Requires: \\(lib\\)\\?openssl/d' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: remove pcre package dependencies'
     shell: "sed -i '/Requires: pcre/d' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with static PCRE library'
-    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre=../pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
+    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre=/home/vagrant/pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: enable PCRE JIT'
     shell: "sed -i '/--with-pcre/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre-jit \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with static OpenSSL library'
