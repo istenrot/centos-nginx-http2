@@ -4,6 +4,7 @@
   vars:
     nginx_src_rpm: nginx-1.9.9-1.el7.ngx.src.rpm
     openssl_src: openssl-1.0.2e
+    pkg_release: 3.el7.sse2
   tasks:
   - name: Install build tools
     yum: name={{ item }} state=latest
@@ -13,6 +14,7 @@
     - ca-certificates
     - curl
     - libcurl
+    - git
     - glib2
     - rsync
     - gcc
@@ -47,6 +49,16 @@
     file: dest=openssl state=directory
   - name: Download OpenSSL
     shell: curl -s -S -L https://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
+  - name: Download CloudFlare CHACHA20-POLY1305 patch
+    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/openssl__chacha20_poly1305_cf.patch
+  - name: Apply CHACHA20-POLY1305 patch to OpenSSL
+    shell: patch -p1 < ~/openssl__chacha20_poly1305_cf.patch
+    args:
+      chdir: ~/openssl
+  - name: Run OpenSSL configure script to apply CHACHA20-POLY1305
+    shell: ./config
+    args:
+      chdir: ~/openssl
   - name: 'Modify RPM spec: remove openssl package dependencies'
     shell: "sed -i '/Requires: \\(lib\\)\\?openssl/d' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with dynamic PCRE library'
@@ -56,25 +68,17 @@
   - name: 'Modify RPM spec: build with static OpenSSL library'
     shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl=/home/vagrant/openssl \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build OpenSSL without Kerberos support'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-krb5 \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without SSLv2'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-ssl2 \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without SSLv3'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-ssl3 \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without SSL compression'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-comp \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without DTLS'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=no-dtls \\\\ ' rpmbuild/SPECS/nginx.spec"
+    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=\"no-krb5 no-ssl2 no-ssl3 no-comp no-dtls no-rc4\" \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: build with dynamic libatomic_ops'
     shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-libatomic \\\\ ' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: add build identifier'
-    shell: sed -i "/--group=/a \ \ \ \ \ \ \ \ --build='SSE2, {{ openssl_src }}, PCRE JIT, libatomic_ops, TCP Fast Open' \\\ " rpmbuild/SPECS/nginx.spec
+    shell: sed -i "/--group=/a \ \ \ \ \ \ \ \ --build='SSE2, {{ openssl_src }} + CHACHA20-POLY1305,  PCRE JIT, libatomic_ops, TCP Fast Open' \\\ " rpmbuild/SPECS/nginx.spec
   - name: 'Modify RPM spec: CC options'
     shell: "sed -i 's/pcre-config --cflags./\\0 -mmmx -msse -msse2 -DTCP_FASTOPEN=23/' rpmbuild/SPECS/nginx.spec"
   - name: 'Modify RPM spec: remove trailing whitespace from configure lines'
     shell: sed -i "s/ $//" rpmbuild/SPECS/nginx.spec
   - name: 'Modify RPM spec: update release'
-    shell: 'sed -i "s/Release: .*\.ngx/Release: 2%{?dist}.sse2/" rpmbuild/SPECS/nginx.spec'
+    shell: 'sed -i "s/Release: .*\.ngx/Release: {{ pkg_release }}/" rpmbuild/SPECS/nginx.spec'
   - name: Build RPM packages
     shell: rpmbuild -ba rpmbuild/SPECS/nginx.spec
 
