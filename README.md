@@ -30,6 +30,44 @@ https://github.com/cloudflare/sslconfig/blob/master/patches/openssl__chacha20_po
 Read more about the patch from CloudFlare's blog:
 https://blog.cloudflare.com/do-the-chacha-better-mobile-performance-with-cryptography/
 
+## Suggested cipher suites
+
+### For ECDSA keys
+
+```
+    ssl_ecdh_curve      secp384r1;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA";
+```
+
+### For RSA keys
+
+```
+        ssl_ecdh_curve      secp384r1;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers         "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA";
+```
+
+You'll also need to define OpenSSL dhaprams file for DHE key exchange suites.
+
+```
+        ssl_dhparam         /etc/pki/tls/misc/dhparam.pem;
+```
+
+I strongly recommend using primes defined in [RFC 3526](http://tools.ietf.org/html/rfc3526). Here's 2048-bit MODP Group:
+
+```
+-----BEGIN DH PARAMETERS-----
+MIIBCAKCAQEA///////////JD9qiIWjCNMTGYouA3BzRKQJOCIpnzHQCC76mOxOb
+IlFKCHmONATd75UZs806QxswKwpt8l8UN0/hNW1tUcJF5IW1dmJefsb0TELppjft
+awv/XLb0Brft7jhr+1qJn6WunyQRfEsf5kkoZlHs5Fs9wgB8uKFjvwWY2kg2HFXT
+mmkWP6j9JM9fg2VdI9yjrZYcYvNWIIVSu57VKQdwlpZtZww1Tkq8mATxdGwIyhgh
+fDKQXkYuNs474553LBgOhgObJ4Oi7Aeij7XFXfBvTFLJ3ivL9pVYFxg5lUl86pVq
+5RXSJhiY+gUQFXKOWoqsqmj//////////wIBAg==
+-----END DH PARAMETERS-----
+```
+
+
 ## Author
 
 Ilari Stenroth (@istenrot)
