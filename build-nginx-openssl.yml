@@ -2,9 +2,9 @@
 - hosts: all
   remote_user: vagrant
   vars:
-    nginx_src_rpm: nginx-1.9.9-1.el7.ngx.src.rpm
-    openssl_src: openssl-1.0.2e
-    pkg_release: 3.el7.sse2
+    nginx_src_rpm: nginx-1.9.10-1.el7.ngx.src.rpm
+    openssl_src: openssl-1.0.2f
+    pkg_release: 2.el7.sse2
   tasks:
   - name: Install EPEL Yum repo
     yum: name=epel-release state=present
