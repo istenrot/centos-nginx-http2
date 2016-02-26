@@ -1,17 +1,18 @@
 ---
 - hosts: all
   remote_user: vagrant
+  vars_files:
+  - variables.yml
   vars:
-    nginx_src_rpm: nginx-1.9.10-1.el7.ngx.src.rpm
-    openssl_src: openssl-1.0.2f
-    pkg_release: 2.el6.sse2
+    nginx_src_rpm: "nginx-{{ nginx_ver }}.el6.ngx.src.rpm"
+    pkg_release: "{{ release_ver }}.el6.sse2"
   tasks:
   - name: Install EPEL Yum repo
     yum: name=epel-release state=present
     become: yes
     become_user: root
   - name: Install build tools from CentOS repos
-    yum: name={{ item }} state=latest
+    yum: name={{ item }} state=present
     become: yes
     become_user: root
     with_items:
@@ -28,6 +29,7 @@
     - tar
     - autoconf
     - automake
+    - libtool
     - zlib-devel
     - glibc-devel
     - libaio-devel
@@ -39,63 +41,56 @@
     - libgcrypt-devel
     - libgpg-error-devel
     - libatomic_ops-devel
+    - libxslt-devel
+    - gd-devel
+    - GeoIP-devel
     - rpm-build
     - redhat-rpm-config
     - mock
     - scl-utils
     - centos-release-scl-rh
   - name: Install build tools from Devtoolset-3 repo
-    yum: name={{ item }} state=latest
+    yum: name={{ item }} state=present
     become: yes
     become_user: root
     with_items:
     - devtoolset-3-binutils
     - devtoolset-3-gcc
     - devtoolset-3-gcc-c++
+  - name: Delete recursively old rpmbuild directory
+    file: dest=rpmbuild state=absent
+  - name: Create new rpmbuild directory
+    file: dest=rpmbuild/BUILD state=directory recurse=yes
   - name: Download Nginx RPM source package
-    get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/nginx-src.rpm
+    get_url: url=http://nginx.org/packages/mainline/centos/6/SRPMS/{{ nginx_src_rpm }} dest=~/rpmbuild/nginx-src.rpm
   - name: Extract Nginx RPM source package
-    shell: rpm -i ~/nginx-src.rpm
-  - name: Make pcre directory
-    file: dest=pcre state=directory
+    shell: rpm -i ~/rpmbuild/nginx-src.rpm
+  - name: Create pcre directory
+    file: dest=rpmbuild/BUILD/pcre state=directory
   - name: Download latest PCRE
-    shell: curl -s -S -L 'http://sourceforge.net/projects/pcre/files/latest/download?source=navbar' | tar -C pcre --strip-components=1 -xj
-  - name: Make openssl directory
-    file: dest=openssl state=directory
+    shell: curl -s -S -L 'http://sourceforge.net/projects/pcre/files/latest/download?source=navbar' | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
+  - name: Create openssl directory
+    file: dest=rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
-    shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C openssl --strip-components=1 -xz
+    shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C rpmbuild/BUILD/openssl --strip-components=1 -xz
   - name: Download CloudFlare CHACHA20-POLY1305 patch
-    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/openssl__chacha20_poly1305_cf.patch
+    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/rpmbuild/openssl__chacha20_poly1305_cf.patch
   - name: Apply CHACHA20-POLY1305 patch to OpenSSL
-    shell: patch -p1 < ~/openssl__chacha20_poly1305_cf.patch
+    shell: patch -p1 < ~/rpmbuild/openssl__chacha20_poly1305_cf.patch
     args:
-      chdir: ~/openssl
+      chdir: ~/rpmbuild/BUILD/openssl
   - name: Run OpenSSL configure script to apply CHACHA20-POLY1305
     shell: source /opt/rh/devtoolset-3/enable && ./config
     args:
-      chdir: ~/openssl
-  - name: 'Modify RPM spec: remove openssl package dependencies'
-    shell: "sed -i '/Requires: \\(lib\\)\\?openssl/d' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: remove pcre package dependencies'
-    shell: "sed -i '/Requires: pcre/d' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build with static PCRE library'
-    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre=/home/vagrant/pcre \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: enable PCRE JIT'
-    shell: "sed -i '/--with-pcre/a \\ \\ \\ \\ \\ \\ \\ \\ --with-pcre-jit \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build with static OpenSSL library'
-    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl=/home/vagrant/openssl \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build OpenSSL without insecure crypto'
-    shell: "sed -i '/--with-openssl=/a \\ \\ \\ \\ \\ \\ \\ \\ --with-openssl-opt=\"no-krb5 no-ssl2 no-ssl3 no-comp no-dtls no-rc4\" \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: build with dynamic libatomic_ops'
-    shell: "sed -i '/--with-ipv6/a \\ \\ \\ \\ \\ \\ \\ \\ --with-libatomic \\\\ ' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: add build identifier'
-    shell: sed -i "/--group=/a \ \ \ \ \ \ \ \ --build='SSE2, {{ openssl_src }} + CHACHA20-POLY1305,  PCRE JIT, libatomic_ops, TCP Fast Open' \\\ " rpmbuild/SPECS/nginx.spec
-  - name: 'Modify RPM spec: CC options'
-    shell: "sed -i 's/pcre-config --cflags./\\0 -mmmx -msse -msse2 -DTCP_FASTOPEN=23/' rpmbuild/SPECS/nginx.spec"
-  - name: 'Modify RPM spec: remove trailing whitespace from configure lines'
-    shell: sed -i "s/ $//" rpmbuild/SPECS/nginx.spec
-  - name: 'Modify RPM spec: update release'
-    shell: 'sed -i "s/Release: .*\.ngx/Release: {{ pkg_release }}/" rpmbuild/SPECS/nginx.spec'
+      chdir: ~/rpmbuild/BUILD/openssl
+  - name: Create ngx_pagespeed directory
+    file: dest=rpmbuild/BUILD/ngx_pagespeed state=directory
+  - name: Download ngx_pagespeed module source
+    shell: curl -s -S -L https://github.com/pagespeed/ngx_pagespeed/archive/v{{ nps_release }}-beta.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed --strip-components=1 -xz
+  - name: Download psol library
+    shell: curl -s -S -L https://dl.google.com/dl/page-speed/psol/{{ nps_release }}.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed -xz
+  - name: Copy RPM spec file to Vagrant box
+    copy: src=specs/nginx.spec dest=rpmbuild/SPECS/nginx.spec
   - name: Build RPM packages
     shell: source /opt/rh/devtoolset-3/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
 
