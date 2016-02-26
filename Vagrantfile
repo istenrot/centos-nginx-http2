@@ -43,8 +43,12 @@ Vagrant.configure(2) do |config|
   #
   # Run Ansible from the Vagrant Host
   #
-  config.vm.provision "ansible" do |ansible|
+  config.vm.provision "build", type: "ansible" do |ansible|
     ansible.playbook = "build-nginx-openssl.yml"
+  end
+
+  config.vm.provision "spec", type: "ansible" do |ansible|
+    ansible.playbook = "generate-spec.yml"
   end
 
 end
