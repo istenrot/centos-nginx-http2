@@ -45,7 +45,7 @@ Requires: systemd
 %define WITH_CC_OPT $(echo %{optflags} $(pcre-config --cflags) -mmmx -msse -msse2 -DTCP_FASTOPEN=23)
 
 %define openssl_config_options no-krb5 no-ssl2 no-ssl3 no-comp no-dtls no-rc4
-%define cust_build_id github.com/istenrot/centos-nginx-http2: openssl-1.0.2f + ChaCha20-Poly1305, PCRE JIT, PageSpeed
+%define cust_build_id github.com/istenrot/centos-nginx-http2: openssl-1.0.2g + ChaCha20-Poly1305, PCRE JIT, PageSpeed
 
 %define COMMON_CONFIGURE_ARGS $(echo "\
         --prefix=%{_sysconfdir}/nginx \
@@ -97,7 +97,7 @@ Requires: systemd
 Summary: High performance web server
 Name: nginx
 Version: 1.9.12
-Release: 2.el7.sse2
+Release: 3.el7.sse2
 Vendor: nginx inc.
 URL: http://nginx.org/
 

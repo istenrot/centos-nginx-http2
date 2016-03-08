@@ -73,8 +73,8 @@
     file: dest=rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
     shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C rpmbuild/BUILD/openssl --strip-components=1 -xz
-  - name: Download CloudFlare CHACHA20-POLY1305 patch
-    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/rpmbuild/openssl__chacha20_poly1305_cf.patch
+  - name: Download CloudFlare CHACHA20-POLY1305 patch for OpenSSL 1.0.2g
+    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_draft_and_rfc_ossl102g.patch dest=~/rpmbuild/openssl__chacha20_poly1305_cf.patch
   - name: Apply CHACHA20-POLY1305 patch to OpenSSL
     shell: patch -p1 < ~/rpmbuild/openssl__chacha20_poly1305_cf.patch
     args:
