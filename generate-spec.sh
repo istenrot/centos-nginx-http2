@@ -3,7 +3,8 @@
 echo "Generating Nginx RPM spec for RHEL/CentOS/SL 6...."
 
 vagrant up --no-provision
+SSHARGS=`vagrant ssh-config | awk 'NF && !/^Host / {print " -o "$1"="$2}'`
 vagrant provision --provision-with spec
-rsync -e "ssh -p2222 -i $HOME/.vagrant.d/insecure_private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" vagrant@127.0.0.1:rpmbuild/SPECS/* specs/
+rsync -e "ssh $SSHARGS" vagrant@127.0.0.1:rpmbuild/SPECS/* specs/
 vagrant destroy
 
