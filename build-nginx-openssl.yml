@@ -62,7 +62,7 @@
   - name: Create new rpmbuild directory
     file: dest=rpmbuild/BUILD state=directory recurse=yes
   - name: Download Nginx RPM source package
-    get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/rpmbuild/nginx-src.rpm
+    get_url: url=http://nginx.org/packages/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/rpmbuild/nginx-src.rpm
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/rpmbuild/nginx-src.rpm
   - name: Create pcre directory
