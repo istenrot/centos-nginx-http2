@@ -68,18 +68,12 @@
   - name: Create pcre directory
     file: dest=rpmbuild/BUILD/pcre state=directory
   - name: Download latest PCRE
-    shell: curl -s -S -L 'http://sourceforge.net/projects/pcre/files/latest/download?source=navbar' | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
+    shell: curl -s -S -L "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-{{ pcre_version }}.tar.bz2" | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
   - name: Create openssl directory
     file: dest=rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
     shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C rpmbuild/BUILD/openssl --strip-components=1 -xz
-  - name: Download CloudFlare CHACHA20-POLY1305 patch
-    get_url: url=https://raw.githubusercontent.com/cloudflare/sslconfig/master/patches/openssl__chacha20_poly1305_cf.patch dest=~/rpmbuild/openssl__chacha20_poly1305_cf.patch
-  - name: Apply CHACHA20-POLY1305 patch to OpenSSL
-    shell: patch -p1 < ~/rpmbuild/openssl__chacha20_poly1305_cf.patch
-    args:
-      chdir: ~/rpmbuild/BUILD/openssl
-  - name: Run OpenSSL configure script to apply CHACHA20-POLY1305
+  - name: Run OpenSSL configure script
     shell: source /opt/rh/devtoolset-3/enable && ./config
     args:
       chdir: ~/rpmbuild/BUILD/openssl
@@ -89,8 +83,12 @@
     shell: curl -s -S -L https://github.com/pagespeed/ngx_pagespeed/archive/v{{ nps_release }}-beta.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed --strip-components=1 -xz
   - name: Download psol library
     shell: curl -s -S -L https://dl.google.com/dl/page-speed/psol/{{ nps_release }}.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed -xz
-  - name: Copy RPM spec file to Vagrant box
-    copy: src=specs/nginx.spec dest=rpmbuild/SPECS/nginx.spec
+  - name: Copy RPM spec patch file to Vagrant box
+    template: src=specs/nginx.spec.patch.j2 dest=rpmbuild/SPECS/nginx.spec.patch
+  - name: Patch nginx.spec file
+    shell: patch -p1 < nginx.spec.patch
+    args:
+      chdir: ~/rpmbuild/SPECS
   - name: Build RPM packages
     shell: source /opt/rh/devtoolset-3/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
 
