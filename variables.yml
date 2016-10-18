@@ -1,5 +1,5 @@
-nginx_ver: 1.10.0-1
-openssl_src: openssl-1.0.2g
+nginx_ver: 1.11.5-1
+openssl_src: openssl-1.1.0b
 release_ver: 3
-nps_release: 1.11.33.0
-
+nps_release: 1.11.33.4
+pcre_version: 8.39
