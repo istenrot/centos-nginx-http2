@@ -77,11 +77,3 @@
 +    --build="%{cust_build_id}" \
      --with-cc-opt="%{WITH_CC_OPT}"
  make %{?_smp_mflags}
- 
-@@ -218,6 +213,7 @@
- 
- %attr(0755,root,root) %dir %{_libdir}/nginx
- %attr(0755,root,root) %dir %{_libdir}/nginx/modules
- %dir %{_datadir}/nginx
- %dir %{_datadir}/nginx/html
- %{_datadir}/nginx/html/*
