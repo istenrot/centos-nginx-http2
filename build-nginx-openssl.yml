@@ -77,12 +77,6 @@
     shell: source /opt/rh/devtoolset-3/enable && ./config
     args:
       chdir: ~/rpmbuild/BUILD/openssl
-  - name: Create ngx_pagespeed directory
-    file: dest=rpmbuild/BUILD/ngx_pagespeed state=directory
-  - name: Download ngx_pagespeed module source
-    shell: curl -s -S -L https://github.com/pagespeed/ngx_pagespeed/archive/v{{ nps_release }}-beta.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed --strip-components=1 -xz
-  - name: Download psol library
-    shell: curl -s -S -L https://dl.google.com/dl/page-speed/psol/{{ nps_release }}.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed -xz
   - name: Copy RPM spec patch file to Vagrant box
     template: src=specs/nginx.spec.patch.j2 dest=rpmbuild/SPECS/nginx.spec.patch
   - name: Patch nginx.spec file
