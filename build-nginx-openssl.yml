@@ -5,7 +5,6 @@
   - variables.yml
   vars:
     nginx_src_rpm: "nginx-{{ nginx_ver }}.el7.ngx.src.rpm"
-    pkg_release: "{{ release_ver }}.el7.sse2"
   tasks:
   - name: Install EPEL Yum repo
     yum: name=epel-release state=present
@@ -49,14 +48,15 @@
     - mock
     - scl-utils
     - centos-release-scl-rh
-  - name: Install build tools from Devtoolset-3 repo
+  - name: Install build tools from Devtoolset-6 repo
     yum: name={{ item }} state=present
     become: yes
     become_user: root
     with_items:
-    - devtoolset-3-binutils
-    - devtoolset-3-gcc
-    - devtoolset-3-gcc-c++
+    - devtoolset-6-make
+    - devtoolset-6-binutils
+    - devtoolset-6-gcc
+    - devtoolset-6-gcc-c++
   - name: Delete recursively old rpmbuild directory
     file: dest=rpmbuild state=absent
   - name: Create new rpmbuild directory
@@ -68,27 +68,74 @@
   - name: Create pcre directory
     file: dest=rpmbuild/BUILD/pcre state=directory
   - name: Download latest PCRE
-    shell: curl -s -S -L "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-{{ pcre_version }}.tar.bz2" | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
+    shell: curl -s -S -L "https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2" | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
   - name: Create openssl directory
     file: dest=rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
     shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C rpmbuild/BUILD/openssl --strip-components=1 -xz
   - name: Run OpenSSL configure script
-    shell: source /opt/rh/devtoolset-3/enable && ./config
+    shell: source /opt/rh/devtoolset-6/enable && ./config
     args:
       chdir: ~/rpmbuild/BUILD/openssl
-  - name: Create ngx_pagespeed directory
-    file: dest=rpmbuild/BUILD/ngx_pagespeed state=directory
-  - name: Download ngx_pagespeed module source
-    shell: curl -s -S -L https://github.com/pagespeed/ngx_pagespeed/archive/v{{ nps_release }}-beta.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed --strip-components=1 -xz
-  - name: Download psol library
-    shell: curl -s -S -L https://dl.google.com/dl/page-speed/psol/{{ nps_release }}.tar.gz | tar -C rpmbuild/BUILD/ngx_pagespeed -xz
-  - name: Copy RPM spec patch file to Vagrant box
-    template: src=specs/nginx.spec.patch.j2 dest=rpmbuild/SPECS/nginx.spec.patch
-  - name: Patch nginx.spec file
-    shell: patch -p1 < nginx.spec.patch
-    args:
-      chdir: ~/rpmbuild/SPECS
+  - name: 'Modify RPM spec: remove openssl package dependencies'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(Build)?Requires: (lib)?openssl[^\n]*\n'
+  - name: 'Modify RPM spec: remove pcre package dependencies'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(Build)?Requires: (lib)?pcre[^\n]*\n'
+  - name: 'Modify RPM spec: build with static PCRE library'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --with-pcre=../pcre")'
+      backrefs: yes
+  - name: 'Modify RPM spec: enable PCRE JIT'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --with-pcre-jit")'
+      backrefs: yes
+  - name: 'Modify RPM spec: build PCRE with PIC option'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --with-pcre-opt=\"-fPIC\"")'
+      backrefs: yes
+  - name: 'Modify RPM spec: build with static OpenSSL library'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --with-openssl=../openssl")'
+      backrefs: yes
+  - name: 'Modify RPM spec: build OpenSSL with custom options'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(./configure %{BASE_CONFIGURE_ARGS} \\\n)( *--with-cc-opt="%{WITH_CC_OPT}" \\\n)'
+      replace: '\1    --with-openssl-opt="no-dtls" \\\n\2'
+  - name: 'Modify RPM spec: build with dynamic libatomic_ops'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --with-libatomic")'
+      backrefs: yes
+  - name: 'Modify RPM spec: add build identifier'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(./configure %{BASE_CONFIGURE_ARGS} \\\n)( *--with-openssl-opt=[^\n]* \\\n)'
+      replace: '\1    --build="github.com/istenrot/centos-nginx-http2: SSE2, {{ openssl_src }}, PCRE JIT, TCP Fast Open" \\\n\2'
+  - name: 'Modify RPM spec: CC options'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define WITH_CC_OPT.*)$'
+      line: '\1 -mmmx -msse -msse2 -DTCP_FASTOPEN=23'
+      backrefs: yes
+  - name: 'Modify RPM spec: update release'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^%define main_release .*\.ngx$'
+      line: '%define main_release 2%{?dist}.exove'
   - name: Build RPM packages
-    shell: source /opt/rh/devtoolset-3/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
+    shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
 
