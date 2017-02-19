@@ -21,17 +21,11 @@ See [the releases](https://github.com/istenrot/centos-nginx-http2/releases) page
 
 ## Disabled OpenSSL features
 
-* TLS compression
-* SSLv2, SSLv3
-* RC4 cipher
 * DTLS (not needed in web servers)
-* Kerberos
 
 ## Suggested cipher suites
 
 With HTTP/2 you need to make sure your server complies with HTTP/2 TLS cipher suite black list ([RFC 7540 Appendix A](https://tools.ietf.org/html/rfc7540)).
-
-ChaCha20-Poly1305 cipher suite won't be selected by the server unless the client lists the ciper suite first on its proposal list. Nginx configuraion ```ssl_prefer_server_ciphers``` won't change this behaviour as it's hard coded into ChaCha20-Poly1305 patch. This makes sure that client with AES-NI feature will fully benefit from AES hardware acceleration while mobile clients without such feature will be offered to negotiate ChaCha20-Poly1305.
 
 ### For ECDSA keys
 
