@@ -33,7 +33,7 @@ With HTTP/2 you need to make sure your server complies with HTTP/2 TLS cipher su
     ssl_protocols       TLSv1.1 TLSv1.2;
     ssl_ecdh_curve      auto;
     ssl_prefer_server_ciphers on;
-    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA";
+    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256";
 ```
 
 ### For RSA keys
@@ -42,7 +42,7 @@ With HTTP/2 you need to make sure your server complies with HTTP/2 TLS cipher su
     ssl_protocols       TLSv1.1 TLSv1.2;
     ssl_ecdh_curve      auto;
     ssl_prefer_server_ciphers on;
-    ssl_ciphers         "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES128-SHA";
+    ssl_ciphers         "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256";
 ```
 
 
