@@ -160,6 +160,38 @@
       dest: ~/rpmbuild/SPECS/nginx.spec
       regexp: '^%define main_release .*\.ngx$'
       line: '%define main_release 2%{?dist}.exove'
+  - name: Download ngx_pagespeed
+    get_url:
+      url: https://github.com/pagespeed/ngx_pagespeed/archive/v{{ ngx_pagespeed_version }}-beta.tar.gz
+      dest: ~/rpmbuild/ngx_pagespeed.tar.gz
+    when: build_ngx_pagespeed_module
+  - name: Download PSOL library
+    get_url:
+      url: https://dl.google.com/dl/page-speed/psol/{{ ngx_pagespeed_version }}.tar.gz
+      dest: ~/rpmbuild/psol.tar.gz
+    when: build_ngx_pagespeed_module
+  - name: Create ngx_pagespeed directory
+    file: dest=~/rpmbuild/BUILD/ngx_pagespeed state=directory
+    when: build_ngx_pagespeed_module
+  - name: Extract ngx_pagespeed
+    command: tar -C ~/rpmbuild/BUILD/ngx_pagespeed --strip-components=1 -xzf ~/rpmbuild/ngx_pagespeed.tar.gz
+    when: build_ngx_pagespeed_module
+  - name: Extract PSOL library
+    command: tar -C ~/rpmbuild/BUILD/ngx_pagespeed -xzf ~/rpmbuild/psol.tar.gz
+    when: build_ngx_pagespeed_module
+  - name: 'Modify RPM spec: add ngx_pagespeed.so to RPM files'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%attr\(0755,root,root\) %dir %{_libdir}/nginx/modules\n)(%dir %{_datadir}/nginx\n)'
+      replace: '\1%{_libdir}/nginx/modules/ngx_pagespeed.so\n\2'
+    when: build_ngx_pagespeed_module
+  - name: 'Modify RPM spec: add ngx_pagespeed as dynamic module'
+    lineinfile:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
+      line: '\1 --add-dynamic-module=../ngx_pagespeed")'
+      backrefs: yes
+    when: build_ngx_pagespeed_module
   - name: Build RPM packages
     shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba ~/rpmbuild/SPECS/nginx.spec
 
