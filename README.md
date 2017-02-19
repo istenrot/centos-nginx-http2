@@ -15,9 +15,16 @@ See [the releases](https://github.com/istenrot/centos-nginx-http2/releases) page
 
 ## Build Requirements
 
-* Vagrant
 * Ansible 2.x
-* VirtualBox
+* Vagrant + VirtualBox or Docker 1.13+
+
+## Build with Vagrant
+
+Run `./build.sh` and in the end RPM package files should be copied into *packages* directory.
+
+## Build with Docker
+
+Run `./build-with-docker.sh` and in the end RPM package files should be copied into *packages* directory.
 
 ## Disabled OpenSSL features
 

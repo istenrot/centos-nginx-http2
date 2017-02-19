@@ -1,6 +1,5 @@
 ---
 - hosts: all
-  remote_user: vagrant
   vars_files:
   - variables.yml
   vars:
@@ -48,6 +47,7 @@
     - mock
     - scl-utils
     - centos-release-scl-rh
+    - sudo
   - name: Install build tools from Devtoolset-6 repo
     yum: name={{ item }} state=present
     become: yes
@@ -58,20 +58,19 @@
     - devtoolset-6-gcc
     - devtoolset-6-gcc-c++
   - name: Create directory for signing keys
-    file: dest=keys state=directory
+    file: dest=~/keys state=directory
   - name: Copy OpenSSL signing keys
-    copy: src=openssl_signers.asc dest=keys/openssl_signers.asc
+    copy: src=openssl_signers.asc dest=~/keys/openssl_signers.asc
   - name: Copy Nginx signing key
-    copy: src=nginx_signing.key dest=keys/nginx_signing.key
+    copy: src=nginx_signing.key dest=~/keys/nginx_signing.key
   - name: Import OpenSSL signing keys
-    command: gpg --import keys/openssl_signers.asc
+    command: gpg --import ~/keys/openssl_signers.asc
   - name: Import Nginx signign key
-    command: rpm --import keys/nginx_signing.key
-    become: yes
+    command: sudo rpm --import ~/keys/nginx_signing.key
   - name: Delete recursively old rpmbuild directory
-    file: dest=rpmbuild state=absent
+    file: dest=~/rpmbuild state=absent
   - name: Create new rpmbuild directory
-    file: dest=rpmbuild/BUILD state=directory recurse=yes
+    file: dest=~/rpmbuild/BUILD state=directory recurse=yes
   - name: Download Nginx RPM source package
     get_url:
       url: http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }}
@@ -81,11 +80,11 @@
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/rpmbuild/nginx-src.rpm
   - name: Create pcre directory
-    file: dest=rpmbuild/BUILD/pcre state=directory
+    file: dest=~/rpmbuild/BUILD/pcre state=directory
   - name: Download latest PCRE
-    shell: curl -s -S -L "https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2" | tar -C rpmbuild/BUILD/pcre --strip-components=1 -xj
+    shell: curl -s -S -L "https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2" | tar -C ~/rpmbuild/BUILD/pcre --strip-components=1 -xj
   - name: Create openssl directory
-    file: dest=rpmbuild/BUILD/openssl state=directory
+    file: dest=~/rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
     get_url:
       url: http://www.openssl.org/source/{{ openssl_src }}.tar.gz
@@ -97,7 +96,7 @@
   - name: Verify OpenSSL source signature
     command: gpgv --keyring pubring.gpg -v ~/rpmbuild/openssl.tar.gz.asc ~/rpmbuild/openssl.tar.gz
   - name: Extract OpenSSL sources
-    command: tar -C rpmbuild/BUILD/openssl --strip-components=1 -xzf ~/rpmbuild/openssl.tar.gz
+    command: tar -C ~/rpmbuild/BUILD/openssl --strip-components=1 -xzf ~/rpmbuild/openssl.tar.gz
   - name: Run OpenSSL configure script
     shell: source /opt/rh/devtoolset-6/enable && ./config
     args:
@@ -162,5 +161,5 @@
       regexp: '^%define main_release .*\.ngx$'
       line: '%define main_release 2%{?dist}.exove'
   - name: Build RPM packages
-    shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba rpmbuild/SPECS/nginx.spec
+    shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba ~/rpmbuild/SPECS/nginx.spec
 
