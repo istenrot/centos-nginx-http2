@@ -32,7 +32,7 @@ To get best possible scores on Qualys ssllabs.com server test support only 256 b
 ### For ECDSA keys
 
 ```
-    ssl_protocols       TLSv1.1 TLSv1.2;
+    ssl_protocols       TLSv1.2;
     ssl_ecdh_curve      auto;
     ssl_prefer_server_ciphers off;
     ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA";
@@ -41,7 +41,7 @@ To get best possible scores on Qualys ssllabs.com server test support only 256 b
 ### For RSA keys
 
 ```
-    ssl_protocols       TLSv1.1 TLSv1.2;
+    ssl_protocols       TLSv1.2;
     ssl_ecdh_curve      auto;
     ssl_prefer_server_ciphers off;
     ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA";
