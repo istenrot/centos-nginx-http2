@@ -57,12 +57,27 @@
     - devtoolset-6-binutils
     - devtoolset-6-gcc
     - devtoolset-6-gcc-c++
+  - name: Create directory for signing keys
+    file: dest=keys state=directory
+  - name: Copy OpenSSL signing keys
+    copy: src=openssl_signers.asc dest=keys/openssl_signers.asc
+  - name: Copy Nginx signing key
+    copy: src=nginx_signing.key dest=keys/nginx_signing.key
+  - name: Import OpenSSL signing keys
+    command: gpg --import keys/openssl_signers.asc
+  - name: Import Nginx signign key
+    command: rpm --import keys/nginx_signing.key
+    become: yes
   - name: Delete recursively old rpmbuild directory
     file: dest=rpmbuild state=absent
   - name: Create new rpmbuild directory
     file: dest=rpmbuild/BUILD state=directory recurse=yes
   - name: Download Nginx RPM source package
-    get_url: url=http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }} dest=~/rpmbuild/nginx-src.rpm
+    get_url:
+      url: http://nginx.org/packages/mainline/centos/7/SRPMS/{{ nginx_src_rpm }}
+      dest: ~/rpmbuild/nginx-src.rpm
+  - name: Verify Nginx RPM source package signature
+    command: rpmkeys -v -K ~/rpmbuild/nginx-src.rpm
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/rpmbuild/nginx-src.rpm
   - name: Create pcre directory
@@ -72,7 +87,17 @@
   - name: Create openssl directory
     file: dest=rpmbuild/BUILD/openssl state=directory
   - name: Download OpenSSL
-    shell: curl -s -S -L http://www.openssl.org/source/{{ openssl_src }}.tar.gz | tar -C rpmbuild/BUILD/openssl --strip-components=1 -xz
+    get_url:
+      url: http://www.openssl.org/source/{{ openssl_src }}.tar.gz
+      dest: ~/rpmbuild/openssl.tar.gz
+  - name: Download OpenSSL source package signature file
+    get_url:
+      url: http://www.openssl.org/source/{{ openssl_src }}.tar.gz.asc
+      dest: ~/rpmbuild/openssl.tar.gz.asc
+  - name: Verify OpenSSL source signature
+    command: gpgv --keyring pubring.gpg -v ~/rpmbuild/openssl.tar.gz.asc ~/rpmbuild/openssl.tar.gz
+  - name: Extract OpenSSL sources
+    command: tar -C rpmbuild/BUILD/openssl --strip-components=1 -xzf ~/rpmbuild/openssl.tar.gz
   - name: Run OpenSSL configure script
     shell: source /opt/rh/devtoolset-6/enable && ./config
     args:
