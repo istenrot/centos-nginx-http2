@@ -11,7 +11,7 @@ Read more about Nginx:
 http://nginx.org/
 
 ## Prebuild Binaries
-See [the releases](https://github.com/istenrot/centos-nginx-http2/releases) page for prebuild binary packages.
+See [Exove CentOS Yum repository](https://packages.exove.com/) for prebuild binary packages.
 
 ## Build Requirements
 
@@ -58,4 +58,6 @@ To get best possible scores on Qualys ssllabs.com server test support only 256 b
 ## Author
 
 Ilari Stenroth (@istenrot)
+
+Thanks to all GitHub project contributors and to my employer [Exove](http://www.exove.com/) for supporting this project!
 
