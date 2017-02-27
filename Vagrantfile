@@ -43,8 +43,11 @@ Vagrant.configure(2) do |config|
   #
   # Run Ansible from the Vagrant Host
   #
-  config.vm.provision "build", type: "ansible" do |ansible|
+  config.vm.provision "build-nginx-openssl", type: "ansible" do |ansible|
     ansible.playbook = "build-nginx-openssl.yml"
+  end
+  config.vm.provision "build-nginx-module-geoip", type: "ansible" do |ansible|
+    ansible.playbook = "build-nginx-module-geoip.yml"
   end
 
 end
