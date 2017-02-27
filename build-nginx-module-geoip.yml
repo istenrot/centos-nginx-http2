@@ -166,8 +166,8 @@
   - name: 'Modify RPM spec: update release'
     lineinfile:
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
-      regexp: '^Release: 1%{?dist}.ngx$'
-      line: '%Release: {{ rpm_release }}.el7.exove'
+      regexp: '^Release: 1%\{\?dist\}.ngx$'
+      line: 'Release: {{ rpm_release }}.el7.exove'
   - name: 'Modify RPM spec: update RPM dependencies'
     lineinfile:
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
