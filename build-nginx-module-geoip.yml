@@ -78,7 +78,7 @@
       url: http://nginx.org/packages/mainline/centos/6/SRPMS/{{ nginx_src_rpm }}
       dest: ~/rpmbuild/nginx-src.rpm
   - name: Verify Nginx RPM source package signature
-    command: rpmkeys -v -K ~/rpmbuild/nginx-src.rpm
+    command: rpmsign -v -K ~/rpmbuild/nginx-src.rpm
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/rpmbuild/nginx-src.rpm
   - name: Download OpenSSL
@@ -96,9 +96,7 @@
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(Build)?Requires: (lib)?openssl[^\n]*\n'
   - name: Download PCRE
-    get_url:
-      url: https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2
-      dest: ~/rpmbuild/SOURCES/pcre-{{ pcre_version }}.tar.bz2
+    command: curl -s -S -o ~/rpmbuild/SOURCES/pcre-{{ pcre_version }}.tar.bz2 https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2
   - name: 'Modify RPM spec: remove pcre package dependencies'
     replace:
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
@@ -167,8 +165,8 @@
   - name: 'Modify RPM spec: update release'
     lineinfile:
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
-      regexp: '^Release: 1%{?dist}.ngx$'
-      line: '%Release: {{ rpm_release }}.el6.exove'
+      regexp: '^Release: 1%\{\?dist\}.ngx$'
+      line: 'Release: {{ rpm_release }}.el6.exove'
   - name: 'Modify RPM spec: update RPM dependencies'
     lineinfile:
       dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
