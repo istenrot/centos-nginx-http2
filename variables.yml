@@ -3,4 +3,4 @@ openssl_src: "openssl-1.1.0e"
 pcre_version: "8.40"
 build_ngx_pagespeed_module: true
 ngx_pagespeed_version: "1.11.33.4"
-build_ngx_http_geoip_module: true
+rpm_release: "2"

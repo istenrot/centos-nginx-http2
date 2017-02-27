@@ -3,7 +3,7 @@
   vars_files:
   - variables.yml
   vars:
-    nginx_src_rpm: "nginx-{{ nginx_ver }}.el6.ngx.src.rpm"
+    nginx_src_rpm: "nginx-module-geoip-{{ nginx_ver }}.el6.ngx.src.rpm"
   tasks:
   - name: Install EPEL Yum repo
     yum: name=epel-release state=present
@@ -78,7 +78,7 @@
       url: http://nginx.org/packages/mainline/centos/6/SRPMS/{{ nginx_src_rpm }}
       dest: ~/rpmbuild/nginx-src.rpm
   - name: Verify Nginx RPM source package signature
-    command: rpmsign -v -K ~/rpmbuild/nginx-src.rpm
+    command: rpmkeys -v -K ~/rpmbuild/nginx-src.rpm
   - name: Extract Nginx RPM source package
     shell: rpm -i ~/rpmbuild/nginx-src.rpm
   - name: Download OpenSSL
@@ -93,154 +93,116 @@
     command: gpgv --keyring pubring.gpg -v ~/rpmbuild/openssl.tar.gz.asc ~/rpmbuild/SOURCES/{{ openssl_src }}.tar.gz
   - name: 'Modify RPM spec: remove openssl package dependencies'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(Build)?Requires: (lib)?openssl[^\n]*\n'
   - name: Download PCRE
-    command: curl -s -S -o ~/rpmbuild/SOURCES/pcre-{{ pcre_version }}.tar.bz2 https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2
+    get_url:
+      url: https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2
+      dest: ~/rpmbuild/SOURCES/pcre-{{ pcre_version }}.tar.bz2
   - name: 'Modify RPM spec: remove pcre package dependencies'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(Build)?Requires: (lib)?pcre[^\n]*\n'
   - name: 'Modify RPM spec: build with static PCRE library'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-pcre=../pcre-{{ pcre_version }}")'
       backrefs: yes
   - name: 'Modify RPM spec: add CentOS SCL release as a build requirement'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '(if 0%\{\?rhel\} == .*\n)'
       replace: '\1BuildRequires: centos-release-scl-rh\n'
   - name: 'Modify RPM spec: add devtoolset-6 as a build requirement'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '(%if 0%\{\?rhel\} == .*\n)'
       replace: '\1BuildRequires: devtoolset-6-gcc\nBuildRequires: devtoolset-6-gcc-c++\nBuildRequires: devtoolset-6-binutils\nBuildRequires: devtoolset-6-make\n'
   - name: 'Modify RPM spec: use devtoolset-6'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '(^(?:\./configure|make) )'
       replace: 'source /opt/rh/devtoolset-6/enable && \1'
   - name: 'Modify RPM spec: enable PCRE JIT'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-pcre-jit")'
       backrefs: yes
   - name: 'Modify RPM spec: build PCRE with PIC option'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-pcre-opt=\"-fPIC\"")'
       backrefs: yes
   - name: 'Modify RPM spec: build with static OpenSSL library'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-openssl=../{{ openssl_src }}")'
       backrefs: yes
   - name: 'Modify RPM spec: build OpenSSL with custom options'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '(./configure %{BASE_CONFIGURE_ARGS} \\\n)( *--with-cc-opt="%{WITH_CC_OPT}" \\\n)'
-      replace: '\1    --with-openssl-opt="no-dtls" \\\n\2'
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
+      regexp: '(./configure %{BASE_CONFIGURE_ARGS} %{MODULE_CONFIGURE_ARGS} \\\n)([\t ]*--with-cc-opt="%{WITH_CC_OPT}" \\\n)'
+      replace: '\1\t--with-openssl-opt="no-dtls" \\\n\2'
   - name: 'Modify RPM spec: build with dynamic libatomic_ops'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-libatomic")'
       backrefs: yes
   - name: 'Modify RPM spec: add build identifier'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '(./configure %{BASE_CONFIGURE_ARGS} \\\n)( *--with-openssl-opt=[^\n]* \\\n)'
-      replace: '\1    --build="github.com/istenrot/centos-nginx-http2: SSE2, {{ openssl_src }}, PCRE JIT, TCP Fast Open" \\\n\2'
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
+      regexp: '(./configure %{BASE_CONFIGURE_ARGS} %{MODULE_CONFIGURE_ARGS} \\\n)([\t ]*--with-openssl-opt=[^\n]* \\\n)'
+      replace: '\1\t--build="github.com/istenrot/centos-nginx-http2: SSE2, {{ openssl_src }}, PCRE JIT, TCP Fast Open" \\\n\2'
   - name: 'Modify RPM spec: CC options'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%define WITH_CC_OPT.*)$'
       line: '\1 -mmmx -msse -msse2 -DTCP_FASTOPEN=23'
       backrefs: yes
   - name: 'Modify RPM spec: update release'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^%define main_release .*\.ngx$'
-      line: '%define main_release {{ rpm_release }}.el6.exove'
-  - name: 'Modify RPM spec: update package vendor'
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
+      regexp: '^Release: 1%{?dist}.ngx$'
+      line: '%Release: {{ rpm_release }}.el6.exove'
+  - name: 'Modify RPM spec: update RPM dependencies'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^Vendor: .*$'
-      line: 'Vendor: Nginx, Inc. and Google, Inc.'
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
+      regexp: '^(Requires: nginx == %\{\?epoch:%\{epoch\}:\}.*)-1%\{\?dist\}.ngx$'
+      line: '\1-{{ rpm_release }}.el6.exove'
+      backrefs: yes
   - name: 'Modify RPM spec: update package URL'
     lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^URL: .*$'
       line: 'URL: https://github.com/istenrot/centos-nginx-http2'
   - name: 'Register last number of Source lines in RPM spec file'
-    shell: grep -P "^Source[0-9]+:" ~/rpmbuild/SPECS/nginx.spec | tail -n 1 | sed "s/^Source\([0-9]\+\):.*$/\1/"
+    shell: grep -P "^Source[0-9]+:" ~/rpmbuild/SPECS/nginx-module-geoip.spec | tail -n 1 | sed "s/^Source\([0-9]\+\):.*$/\1/"
     register: num_sources
   - name: 'Modify RPM spec: add OpenSSL sources to src rpm build'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(Source\d+: [^\n]+\n)(^\n)'
       replace: '\1Source{{ num_sources.stdout | int + 1 }}: http://www.openssl.org/source/{{ openssl_src }}.tar.gz\n\2'
   - name: 'Modify RPM spec: add PCRE sources to src rpm build'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(Source\d+: [^\n]+\n)(^\n)'
       replace: '\1Source{{ num_sources.stdout | int + 2 }}: https://ftp.pcre.org/pub/pcre/pcre-{{ pcre_version }}.tar.bz2\n\2'
   - name: 'Modify RPM spec: modify %prep macros to extract OpenSSL tar file'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(%prep\n)(%setup -q\n)'
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
+      regexp: '^(%prep\n)(%setup -qcTn %\{name\}-%\{main_version\}\n)'
       replace: '\1%setup -q -T -D -n {{ openssl_src }} -b {{ num_sources.stdout | int + 1 }}\nsource /opt/rh/devtoolset-6/enable && ./config\n\2'
   - name: 'Modify RPM spec: modify %prep macros to extract PCRE tar file'
     replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
+      dest: ~/rpmbuild/SPECS/nginx-module-geoip.spec
       regexp: '^(%prep\n%setup -q -T -D -n {{ openssl_src }} -b {{ num_sources.stdout | int + 1 }}\nsource /opt/rh/devtoolset-6/enable && ./config\n)'
       replace: '\1%setup -q -T -D -n pcre-{{ pcre_version }} -b {{ num_sources.stdout | int + 2 }}\n'
-  - name: Download ngx_pagespeed
-    get_url:
-      url: https://github.com/pagespeed/ngx_pagespeed/archive/v{{ ngx_pagespeed_version }}-beta.tar.gz
-      dest: ~/rpmbuild/SOURCES/ngx_pagespeed-{{ ngx_pagespeed_version }}-beta.tar.gz
-    when: build_ngx_pagespeed_module
-  - name: Download PSOL library
-    get_url:
-      url: https://dl.google.com/dl/page-speed/psol/{{ ngx_pagespeed_version }}.tar.gz
-      dest: ~/rpmbuild/SOURCES/psol-{{ ngx_pagespeed_version }}.tar.gz
-    when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: add ngx_pagespeed.so to RPM files'
-    replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(%attr\(0755,root,root\) %dir %{_libdir}/nginx/modules\n)'
-      replace: '\1%{_libdir}/nginx/modules/ngx_pagespeed.so\n'
-    when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: add ngx_pagespeed as dynamic module'
-    lineinfile:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
-      line: '\1 --add-dynamic-module=../ngx_pagespeed-{{ ngx_pagespeed_version }}-beta")'
-      backrefs: yes
-    when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: add ngx_pagespeed sources to src rpm build'
-    replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(Source\d+: [^\n]+\n)(^\n)'
-      replace: '\1Source{{ num_sources.stdout | int + 3 }}: ngx_pagespeed-{{ ngx_pagespeed_version }}-beta.tar.gz\n\2'
-    when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: add PSOL sources to src rpm build'
-    replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(Source\d+: [^\n]+\n)(^\n)'
-      replace: '\1Source{{ num_sources.stdout | int + 4 }}: psol-{{ ngx_pagespeed_version }}.tar.gz\n\2'
-    when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: modify %prep macros to extract ngx_pagespeed tar files'
-    replace:
-      dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(%prep\n%setup -q -T -D -n {{ openssl_src }} -b {{ num_sources.stdout | int + 1 }}\nsource /opt/rh/devtoolset-6/enable && ./config\n)'
-      replace: '\1%setup -q -T -D -n ngx_pagespeed-{{ ngx_pagespeed_version }}-beta -b {{ num_sources.stdout | int + 3 }}\n%setup -q -T -D -n ngx_pagespeed-{{ ngx_pagespeed_version }}-beta -a {{ num_sources.stdout | int + 4 }}\n'
-    when: build_ngx_pagespeed_module
   - name: Build RPM packages
-    shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba ~/rpmbuild/SPECS/nginx.spec
+    shell: source /opt/rh/devtoolset-6/enable && rpmbuild -ba ~/rpmbuild/SPECS/nginx-module-geoip.spec
 
