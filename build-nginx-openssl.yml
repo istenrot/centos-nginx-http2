@@ -107,6 +107,21 @@
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-pcre=../pcre-{{ pcre_version }}")'
       backrefs: yes
+  - name: 'Modify RPM spec: add CentOS SCL release as a build requirement'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '(if 0%\{\?rhel\} == .*\n)'
+      replace: '\1BuildRequires: centos-release-scl-rh\n'
+  - name: 'Modify RPM spec: add devtoolset-6 as a build requirement'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '(%if 0%\{\?rhel\} == .*\n)'
+      replace: '\1BuildRequires: devtoolset-6-gcc\nBuildRequires: devtoolset-6-gcc-c++\nBuildRequires: devtoolset-6-binutils\nBuildRequires: devtoolset-6-make\n'
+  - name: 'Modify RPM spec: use devtoolset-6'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '(^(?:\./configure|make) )'
+      replace: 'source /opt/rh/devtoolset-6/enable && \1'
   - name: 'Modify RPM spec: enable PCRE JIT'
     lineinfile:
       dest: ~/rpmbuild/SPECS/nginx.spec
