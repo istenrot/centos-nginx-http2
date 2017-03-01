@@ -215,11 +215,26 @@
       url: https://dl.google.com/dl/page-speed/psol/{{ ngx_pagespeed_version }}.tar.gz
       dest: ~/rpmbuild/SOURCES/psol-{{ ngx_pagespeed_version }}.tar.gz
     when: build_ngx_pagespeed_module
-  - name: 'Modify RPM spec: add ngx_pagespeed.so to RPM files'
-    replace:
+  - name: 'Modify RPM spec: add nginx-module-pagespeed as a subpackage'
+    blockinfile:
       dest: ~/rpmbuild/SPECS/nginx.spec
-      regexp: '^(%attr\(0755,root,root\) %dir %{_libdir}/nginx/modules\n)'
-      replace: '\1%{_libdir}/nginx/modules/ngx_pagespeed.so\n'
+      marker: "\n"
+      block: |
+        %package module-pagespeed
+        Name: nginx-module-pagespeed
+        Summary: ngx_pagespeed dynamic module for Nginx
+        Vendor: Google, Inc. and contributors
+        License: ASL 2.0
+        Provides: ngx_pagespeed-{{ ngx_pagespeed_version }}-beta
+        Requires: nginx = 1:%{main_version}-%{main_release}
+        %description module-pagespeed
+        ngx_pagespeed dynamic module for Nginx.
+
+        %files module-pagespeed
+        %defattr(-,root,root)
+        %attr(0755,root,root) %dir %{_libdir}/nginx
+        %attr(0755,root,root) %dir %{_libdir}/nginx/modules
+        %{_libdir}/nginx/modules/ngx_pagespeed.so
     when: build_ngx_pagespeed_module
   - name: 'Modify RPM spec: add ngx_pagespeed as dynamic module'
     lineinfile:
