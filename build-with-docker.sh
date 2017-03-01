@@ -3,7 +3,7 @@
 echo "Building Nginx for RHEL/CentOS/SL 6 with Docker...."
 
 ngx_ver=$(sed -e 's/nginx_ver: "\(.*\)-1"/\1/'  -e 'tx' -e 'd' -e ':x' variables.yml)
-rpm_release=$(sed -e 's/rpm_release: "\(.*\)-1"/\1/'  -e 'tx' -e 'd' -e ':x' variables.yml)
+rpm_release=$(sed -e 's/rpm_release: "\(.*\)"/\1/'  -e 'tx' -e 'd' -e ':x' variables.yml)
 docker pull centos:6
 docker run --net=host --name centos6_nginx_builder -it -d centos:6 /bin/bash || docker restart centos6_nginx_builder
 
