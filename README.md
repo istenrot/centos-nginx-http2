@@ -36,23 +36,13 @@ With HTTP/2 you need to make sure your server complies with HTTP/2 TLS cipher su
 
 To get best possible scores on Qualys ssllabs.com server test support only 256 bit strong ciphers. Consider performance penalty and battery drain issues when you disable 128 bit strong ciphers.
 
-### For ECDSA keys
-
 ```
     ssl_protocols       TLSv1.2;
     ssl_ecdh_curve      auto;
     ssl_prefer_server_ciphers off;
-    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA";
+    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA";
 ```
 
-### For RSA keys
-
-```
-    ssl_protocols       TLSv1.2;
-    ssl_ecdh_curve      auto;
-    ssl_prefer_server_ciphers off;
-    ssl_ciphers         "ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA";
-```
 
 
 ## Author
