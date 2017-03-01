@@ -108,6 +108,11 @@
       regexp: '^(%define BASE_CONFIGURE_ARGS.*)"\)$'
       line: '\1 --with-pcre=../pcre-{{ pcre_version }}")'
       backrefs: yes
+  - name: 'Modify RPM spec: add libatomic_ops-devel as a build requirement'
+    replace:
+      dest: ~/rpmbuild/SPECS/nginx.spec
+      regexp: '^(BuildRequires: zlib-devel\n)'
+      replace: '\1BuildRequires: libatomic_ops-devel\n'
   - name: 'Modify RPM spec: add CentOS SCL release as a build requirement'
     replace:
       dest: ~/rpmbuild/SPECS/nginx.spec
