@@ -11,6 +11,7 @@ docker run --net=host --name centos7_nginx_builder -it -d centos:7 /bin/bash || 
 ansible-playbook -c docker -i centos7_nginx_builder, -u root build-nginx-openssl.yml || exit 1
 docker cp centos7_nginx_builder:/root/rpmbuild/RPMS/x86_64/nginx-$ngx_ver-$rpm_release.el7.exove.x86_64.rpm packages/
 docker cp centos7_nginx_builder:/root/rpmbuild/RPMS/x86_64/nginx-debuginfo-$ngx_ver-$rpm_release.el7.exove.x86_64.rpm packages/
+docker cp centos7_nginx_builder:/root/rpmbuild/RPMS/x86_64/nginx-module-pagespeed-$ngx_ver-$rpm_release.el7.exove.x86_64.rpm packages/
 docker cp centos7_nginx_builder:/root/rpmbuild/SRPMS/nginx-$ngx_ver-$rpm_release.el7.exove.src.rpm packages/
 
 ansible-playbook -c docker -i centos7_nginx_builder, -u root build-nginx-module-geoip.yml || exit 1
