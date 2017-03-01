@@ -221,7 +221,6 @@
       marker: "\n"
       block: |
         %package module-pagespeed
-        Name: nginx-module-pagespeed
         Summary: ngx_pagespeed dynamic module for Nginx
         Vendor: Google, Inc. and contributors
         License: ASL 2.0
