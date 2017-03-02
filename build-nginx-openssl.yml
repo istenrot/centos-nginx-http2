@@ -225,7 +225,7 @@
         Vendor: Google, Inc. and contributors
         License: ASL 2.0
         Provides: ngx_pagespeed-{{ ngx_pagespeed_version }}-beta
-        Requires: nginx = %{epoch}:%{main_version}-%{main_release}
+        Requires: nginx = %{?epoch:%{epoch}:}%{main_version}-%{main_release}
         %description module-pagespeed
         ngx_pagespeed dynamic module for Nginx.
 
